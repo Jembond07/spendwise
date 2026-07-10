@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 
 import Nav from "./components/Nav.jsx";
 import Budgets from "./pages/Budgets.jsx";
+import Categories from "./pages/Categories.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Expenses from "./pages/Expenses.jsx";
 import Import from "./pages/Import.jsx";
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/import" element={<Import />} />
           <Route path="/budgets" element={<Budgets />} />
+          <Route path="/categories" element={<Categories />} />
         </Routes>
       </main>
     </div>

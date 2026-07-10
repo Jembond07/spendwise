@@ -5,6 +5,7 @@ const LINKS = [
   { to: "/expenses", label: "Expenses" },
   { to: "/import", label: "Import" },
   { to: "/budgets", label: "Budgets" },
+  { to: "/categories", label: "Categories" },
 ];
 
 export default function Nav() {

@@ -192,6 +192,7 @@ class CategoryTotal(BaseModel):
     category_id: Optional[int]
     category_name: str
     color: str
+    icon: str = "tag"
     total: float
 
 

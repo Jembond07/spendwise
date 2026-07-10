@@ -1,4 +1,4 @@
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 const formatCurrency = (n) =>
   n.toLocaleString(undefined, { style: "currency", currency: "USD" });
@@ -9,14 +9,14 @@ export default function CategoryChart({ data }) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={220}>
       <PieChart>
         <Pie
           data={data}
           dataKey="total"
           nameKey="category_name"
-          innerRadius={60}
-          outerRadius={100}
+          innerRadius={55}
+          outerRadius={90}
           paddingAngle={2}
         >
           {data.map((entry) => (
@@ -24,7 +24,6 @@ export default function CategoryChart({ data }) {
           ))}
         </Pie>
         <Tooltip formatter={(value) => formatCurrency(value)} />
-        <Legend />
       </PieChart>
     </ResponsiveContainer>
   );

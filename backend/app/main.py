@@ -399,6 +399,7 @@ def dashboard(db: Session = Depends(get_db)):
             Category.id,
             Category.name,
             Category.color,
+            Category.icon,
             func.coalesce(func.sum(Expense.amount), 0.0).label("total"),
         )
         .join(Expense, Expense.category_id == Category.id)
@@ -408,7 +409,7 @@ def dashboard(db: Session = Depends(get_db)):
         .all()
     )
     by_category = [
-        CategoryTotal(category_id=r.id, category_name=r.name, color=r.color, total=float(r.total))
+        CategoryTotal(category_id=r.id, category_name=r.name, color=r.color, icon=r.icon, total=float(r.total))
         for r in by_category_rows
     ]
 

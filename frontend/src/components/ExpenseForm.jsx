@@ -8,9 +8,9 @@ const today = () => {
   return new Date(d - offset).toISOString().slice(0, 10);
 };
 
-const emptyForm = { amount: "", description: "", category_id: "", date: today() };
+const emptyForm = { amount: "", description: "", category_id: "", account_id: "", date: today() };
 
-export default function ExpenseForm({ categories, onSubmit, initial, onCancel }) {
+export default function ExpenseForm({ categories, accounts, onSubmit, initial, onCancel }) {
   const [form, setForm] = useState(initial ? { ...initial } : emptyForm);
   const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState(null);
@@ -42,6 +42,7 @@ export default function ExpenseForm({ categories, onSubmit, initial, onCancel })
       amount: parseFloat(form.amount),
       description: form.description,
       category_id: form.category_id ? parseInt(form.category_id, 10) : null,
+      account_id: form.account_id ? parseInt(form.account_id, 10) : null,
       date: form.date,
     });
     if (!initial) setForm(emptyForm);
@@ -79,6 +80,17 @@ export default function ExpenseForm({ categories, onSubmit, initial, onCancel })
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label>Account</label>
+          <select value={form.account_id ?? ""} onChange={update("account_id")}>
+            <option value="">No account</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
               </option>
             ))}
           </select>

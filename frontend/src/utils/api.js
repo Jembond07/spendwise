@@ -29,6 +29,14 @@ export const updateCategory = (id, data) =>
   request(`/categories/${id}`, { method: "PUT", body: JSON.stringify(data) });
 export const deleteCategory = (id) => request(`/categories/${id}`, { method: "DELETE" });
 
+// Accounts
+export const getAccounts = () => request("/accounts");
+export const createAccount = (data) =>
+  request("/accounts", { method: "POST", body: JSON.stringify(data) });
+export const updateAccount = (id, data) =>
+  request(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) });
+export const deleteAccount = (id) => request(`/accounts/${id}`, { method: "DELETE" });
+
 // Expenses
 export const getExpenses = (params = {}) => {
   const query = new URLSearchParams(
@@ -43,10 +51,12 @@ export const updateExpense = (id, data) =>
 export const deleteExpense = (id) => request(`/expenses/${id}`, { method: "DELETE" });
 
 // CSV import
-export const importCsv = (file, autoCategorize) => {
+export const importCsv = (file, autoCategorize, accountId) => {
   const form = new FormData();
   form.append("file", file);
-  return request(`/import/csv?auto_categorize=${autoCategorize}`, {
+  const query = new URLSearchParams({ auto_categorize: autoCategorize });
+  if (accountId) query.set("account_id", accountId);
+  return request(`/import/csv?${query.toString()}`, {
     method: "POST",
     body: form,
   });

@@ -2,25 +2,36 @@ import { useEffect, useState } from "react";
 
 import ExpenseForm from "../components/ExpenseForm.jsx";
 import ExpenseList from "../components/ExpenseList.jsx";
-import { createExpense, deleteExpense, getCategories, getExpenses, updateExpense } from "../utils/api.js";
+import {
+  createExpense,
+  deleteExpense,
+  getAccounts,
+  getCategories,
+  getExpenses,
+  updateExpense,
+} from "../utils/api.js";
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [accountFilter, setAccountFilter] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
-      const [expenseData, categoryData] = await Promise.all([
-        getExpenses({ search, category_id: categoryFilter || undefined }),
+      const [expenseData, categoryData, accountData] = await Promise.all([
+        getExpenses({ search, category_id: categoryFilter || undefined, account_id: accountFilter || undefined }),
         getCategories(),
+        getAccounts(),
       ]);
       setExpenses(expenseData);
       setCategories(categoryData);
+      setAccounts(accountData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -31,7 +42,7 @@ export default function Expenses() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, categoryFilter]);
+  }, [search, categoryFilter, accountFilter]);
 
   const handleCreate = async (data) => {
     try {
@@ -71,6 +82,7 @@ export default function Expenses() {
         <ExpenseForm
           key={editing?.id ?? "new"}
           categories={categories}
+          accounts={accounts}
           initial={editing}
           onSubmit={editing ? handleUpdate : handleCreate}
           onCancel={editing ? () => setEditing(null) : null}
@@ -92,6 +104,14 @@ export default function Expenses() {
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
+                </option>
+              ))}
+            </select>
+            <select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)}>
+              <option value="">All accounts</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
                 </option>
               ))}
             </select>

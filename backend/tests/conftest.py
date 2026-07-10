@@ -6,8 +6,8 @@ from sqlalchemy.pool import StaticPool
 
 from app import models  # noqa: F401  ensure models are registered on Base
 from app.database import Base, get_db
-from app.main import DEFAULT_CATEGORIES, app
-from app.models import Category
+from app.main import DEFAULT_ACCOUNTS, DEFAULT_CATEGORIES, app
+from app.models import Account, Category
 
 TEST_ENGINE = create_engine(
     "sqlite:///:memory:",
@@ -36,6 +36,8 @@ def reset_db():
     try:
         for cat in DEFAULT_CATEGORIES:
             db.add(Category(**cat))
+        for acct in DEFAULT_ACCOUNTS:
+            db.add(Account(**acct))
         db.commit()
     finally:
         db.close()

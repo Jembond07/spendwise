@@ -11,6 +11,10 @@ from app.categorizer import categorize_expense
 from app.csv_parser import CsvParseError, parse_csv
 from app.database import get_db, init_db
 from app.models import (
+    Account,
+    AccountCreate,
+    AccountOut,
+    AccountUpdate,
     Budget,
     BudgetCreate,
     BudgetOut,
@@ -40,7 +44,10 @@ async def lifespan(app: FastAPI):
         if db.query(Category).count() == 0:
             for cat in DEFAULT_CATEGORIES:
                 db.add(Category(**cat))
-            db.commit()
+        if db.query(Account).count() == 0:
+            for acct in DEFAULT_ACCOUNTS:
+                db.add(Account(**acct))
+        db.commit()
     finally:
         db.close()
     yield
@@ -67,6 +74,13 @@ DEFAULT_CATEGORIES = [
     {"name": "Health", "color": "#14b8a6", "icon": "heart", "ai_keywords": ["pharmacy", "doctor", "dental", "gym", "cvs", "walgreens"]},
     {"name": "Travel", "color": "#06b6d4", "icon": "plane", "ai_keywords": ["airline", "hotel", "airbnb", "flight"]},
     {"name": "Other", "color": "#6b7280", "icon": "tag", "ai_keywords": []},
+]
+
+DEFAULT_ACCOUNTS = [
+    {"name": "Checking", "type": "checking", "color": "#0ea5e9"},
+    {"name": "Credit Card", "type": "credit", "color": "#f43f5e"},
+    {"name": "Savings", "type": "savings", "color": "#10b981"},
+    {"name": "Investment", "type": "investment", "color": "#8b5cf6"},
 ]
 
 
@@ -116,6 +130,46 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
+# Accounts
+# ---------------------------------------------------------------------------
+
+
+@app.get("/accounts", response_model=list[AccountOut])
+def list_accounts(db: Session = Depends(get_db)):
+    return db.query(Account).order_by(Account.name).all()
+
+
+@app.post("/accounts", response_model=AccountOut, status_code=201)
+def create_account(payload: AccountCreate, db: Session = Depends(get_db)):
+    account = Account(**payload.model_dump())
+    db.add(account)
+    db.commit()
+    db.refresh(account)
+    return account
+
+
+@app.put("/accounts/{account_id}", response_model=AccountOut)
+def update_account(account_id: int, payload: AccountUpdate, db: Session = Depends(get_db)):
+    account = db.get(Account, account_id)
+    if not account:
+        raise HTTPException(404, "Account not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(account, field, value)
+    db.commit()
+    db.refresh(account)
+    return account
+
+
+@app.delete("/accounts/{account_id}", status_code=204)
+def delete_account(account_id: int, db: Session = Depends(get_db)):
+    account = db.get(Account, account_id)
+    if not account:
+        raise HTTPException(404, "Account not found")
+    db.delete(account)
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
 # Expenses
 # ---------------------------------------------------------------------------
 
@@ -132,6 +186,7 @@ def create_expense(payload: ExpenseCreate, db: Session = Depends(get_db)):
 @app.get("/expenses", response_model=list[ExpenseOut])
 def list_expenses(
     category_id: Optional[int] = None,
+    account_id: Optional[int] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     search: Optional[str] = None,
@@ -142,6 +197,8 @@ def list_expenses(
     query = db.query(Expense)
     if category_id is not None:
         query = query.filter(Expense.category_id == category_id)
+    if account_id is not None:
+        query = query.filter(Expense.account_id == account_id)
     if start_date is not None:
         query = query.filter(Expense.date >= start_date)
     if end_date is not None:
@@ -194,8 +251,12 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db)):
 async def import_csv(
     file: UploadFile,
     auto_categorize: bool = False,
+    account_id: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
+    if account_id is not None and not db.get(Account, account_id):
+        raise HTTPException(404, "Account not found")
+
     content = await file.read()
     try:
         rows, errors = parse_csv(content)
@@ -203,8 +264,24 @@ async def import_csv(
         raise HTTPException(400, str(exc))
 
     categories = db.query(Category).all() if auto_categorize else []
+
+    seen = set()
+    if rows:
+        existing = db.query(Expense.date, Expense.amount, Expense.description, Expense.account_id).filter(
+            Expense.date.in_({row.date for row in rows}),
+            Expense.account_id == account_id,
+        )
+        seen = {(e.date, e.amount, e.description, e.account_id) for e in existing}
+
     imported = 0
+    duplicates = 0
     for row in rows:
+        key = (row.date, row.amount, row.description, account_id)
+        if key in seen:
+            duplicates += 1
+            continue
+        seen.add(key)
+
         category_id = None
         if auto_categorize:
             result = categorize_expense(row.description, categories)
@@ -215,13 +292,14 @@ async def import_csv(
                 description=row.description,
                 date=row.date,
                 category_id=category_id,
+                account_id=account_id,
                 source="csv",
             )
         )
         imported += 1
     db.commit()
 
-    return ImportResult(imported=imported, skipped=len(errors), errors=errors)
+    return ImportResult(imported=imported, duplicates=duplicates, skipped=len(errors), errors=errors)
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 
 import Nav from "./components/Nav.jsx";
+import Accounts from "./pages/Accounts.jsx";
 import Budgets from "./pages/Budgets.jsx";
 import Categories from "./pages/Categories.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/import" element={<Import />} />
           <Route path="/budgets" element={<Budgets />} />
           <Route path="/categories" element={<Categories />} />
+          <Route path="/accounts" element={<Accounts />} />
         </Routes>
       </main>
     </div>

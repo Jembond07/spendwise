@@ -8,6 +8,7 @@ the box without a key.
 """
 
 import json
+import logging
 import os
 
 from anthropic import Anthropic
@@ -15,6 +16,8 @@ from anthropic import Anthropic
 from app.models import Category, CategorizeResponse
 
 MODEL = "claude-sonnet-5"
+
+logger = logging.getLogger(__name__)
 
 
 def _keyword_fallback(description: str, categories: list[Category]) -> CategorizeResponse:
@@ -66,7 +69,7 @@ If nothing fits well, use {{"category": null, "confidence": 0.0}}."""
             max_tokens=200,
             messages=[{"role": "user", "content": prompt}],
         )
-        raw = message.content[0].text.strip()
+        raw = next(block.text for block in message.content if block.type == "text").strip()
         parsed = json.loads(raw)
         category_name = parsed.get("category")
         confidence = float(parsed.get("confidence", 0.0))
@@ -89,4 +92,5 @@ If nothing fits well, use {{"category": null, "confidence": 0.0}}."""
             method="claude",
         )
     except Exception:
+        logger.warning("Claude categorization failed, falling back to keyword match", exc_info=True)
         return _keyword_fallback(description, categories)

@@ -46,7 +46,8 @@ def test_filter_expenses_by_search(client):
     assert results[0]["description"] == "Netflix sub"
 
 
-def test_categorize_keyword_fallback(client):
+def test_categorize_keyword_fallback(client, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     resp = client.post("/categorize", json={"description": "Uber ride downtown"})
     assert resp.status_code == 200
     body = resp.json()
